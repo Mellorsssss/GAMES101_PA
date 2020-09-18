@@ -25,35 +25,32 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
     return view;
 }
 
+// rotate by z-axis
 Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
 
-    // TODO: Implement this function
-    // Create the model matrix for rotating the triangle around the Z axis.
-    // Then return it.
     Eigen::Matrix4f rotateMatrix;
     float radian=cal_radian(rotation_angle);
     float cosVal=std::cos(radian),sinVal=std::sin(radian);
+    
     rotateMatrix<<cosVal,-sinVal,0,0,
                   sinVal,cosVal,0,0,
                   0,0,1,0,
                   0,0,0,1;
+    
     model=rotateMatrix*model;
     return model;
+
 }
 
+//perspective projection 
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
                                       float zNear, float zFar)
 {
-    // Students will implement this function
 
     Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
 
-    // TODO: Implement this function
-    // Create the projection matrix for the given parameters.
-    // Then return it.
-    
     // caculate the t and r
     float t=std::tan(cal_radian(eye_fov/2.0))*std::abs(zNear),
     r=aspect_ratio*t;
@@ -65,9 +62,22 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
                       0,0,zNear+zFar,-zNear*zFar,
                       0,0,1,0;
     projection=projectionMatrix*projection;
+
+    Eigen::Matrix4f orthographic,orth_translate,orth_scale;
+    orth_translate<<1,0,0,0,
+                    0,1,0,0,
+                    0,0,1,-1.0*(zNear+zFar)/2,
+                    0,0,0,1;
+    orth_scale<<1.0/r,0,0,0,
+                0,1.0/t,0,0,
+                0,0,2.0/(zNear-zFar),0,
+                0,0,0,1;
+    orthographic=orth_scale*orth_translate;
+    projection=orthographic*projection;
     return projection;
 }
 
+// rotate by any axis 
 Eigen::Matrix4f get_rotation(Eigen::Vector3f axis, float angle){
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
     Eigen::Matrix4f Rodrigues;
@@ -75,20 +85,27 @@ Eigen::Matrix4f get_rotation(Eigen::Vector3f axis, float angle){
 
     //caculate the dual matrix of axis
     Eigen::Matrix3f K;
+
+    // normlize the axis
+    float norm = sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+    axis[0]/=norm;
+    axis[1]/=norm;
+    axis[2]/=norm;
     K<<0,-axis(2),axis(1),
        axis(2),0,-axis(0),
        -axis(1),axis(0),0;
     
-    // necessary cos and sin values
     float radian=cal_radian(angle);
     float cosVal=std::cos(radian),sinVal=std::sin(radian);
+
+    // Rodrigues mat
     midMat=cosVal*Eigen::Matrix3f::Identity()+(1-cosVal)*axis*axis.transpose()+sinVal*K;
-    Rodrigues<<midMat(0,0),midMat(0,1),midMat(0,2),0,
-               midMat(1,0),midMat(1,1),midMat(1,2),0,
-               midMat(2,0),midMat(2,1),midMat(2,2),0,
-               0,0,0,1;
+
+    Rodrigues=Eigen::Matrix4f::Identity();
+    Rodrigues.block(0,0,3,3)=midMat;
     model=Rodrigues*model;
     return model;
+   
 }
 
 int main(int argc, const char** argv)
@@ -97,14 +114,23 @@ int main(int argc, const char** argv)
     bool command_line = false;
     std::string filename = "output.png";
 
-    if (argc >= 3) {
+    // diy the axis
+    float axis_x=0,axis_y=0,axis_z=1;
+
+    if(argc>=5&&argv[1][0]=='s'){
+        axis_x=std::stof(argv[2]);
+        axis_y=std::stof(argv[3]);
+        axis_z=std::stof(argv[4]);
+    }
+    else  if (argc >= 3) {
         command_line = true;
         angle = std::stof(argv[2]); // -r by default
         if (argc == 4) {
             filename = std::string(argv[3]);
         }
-        else
+        else{
             return 0;
+        }
     }
 
     rst::rasterizer r(700, 700);
@@ -141,7 +167,7 @@ int main(int argc, const char** argv)
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
 
         //r.set_model(get_model_matrix(angle));
-        r.set_model(get_rotation(Eigen::Vector3f(-1,0,-1.0),angle));
+        r.set_model(get_rotation(Eigen::Vector3f(axis_x,axis_y,axis_z),angle));
         r.set_view(get_view_matrix(eye_pos));
         r.set_projection(get_projection_matrix(45, 1, 0.1, 50));
 
