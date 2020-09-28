@@ -7,6 +7,11 @@
 
 constexpr double MY_PI = 3.1415926;
 
+// calclate the radian of the angle
+inline float cal_radian(float angle){
+    return angle*MY_PI/180.0;
+}
+
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
@@ -32,7 +37,29 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
 {
     // TODO: Copy-paste your implementation from the previous assignment.
     Eigen::Matrix4f projection;
+    // caculate the t and r
+    float t=std::tan(cal_radian(eye_fov/2.0))*std::abs(zNear),
+    r=aspect_ratio*t;
 
+    // generate the projection matrix
+    Eigen::Matrix4f projectionMatrix;
+    projectionMatrix<<zNear,0,0,0,
+                      0,zNear,0,0,
+                      0,0,zNear+zFar,-zNear*zFar,
+                      0,0,1,0;
+    projection=projectionMatrix*projection;
+
+    Eigen::Matrix4f orthographic,orth_translate,orth_scale;
+    orth_translate<<1,0,0,0,
+                    0,1,0,0,
+                    0,0,1,-1.0*(zNear+zFar)/2,
+                    0,0,0,1;
+    orth_scale<<1.0/r,0,0,0,
+                0,1.0/t,0,0,
+                0,0,2.0/(zNear-zFar),0,
+                0,0,0,1;
+    orthographic=orth_scale*orth_translate;
+    projection=orthographic*projection;
     return projection;
 }
 

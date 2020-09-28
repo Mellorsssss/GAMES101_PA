@@ -39,6 +39,8 @@ namespace rst
      * make sure that if you mix up with their orders, the compiler won't compile it.
      * Aka : Type safety
      * */
+
+    //instead of just using int type, use a struct to make sure that the types of the two arguments must be the same!!!
     struct pos_buf_id
     {
         int pos_id = 0;

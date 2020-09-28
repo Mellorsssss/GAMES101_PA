@@ -40,12 +40,20 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
 }
 
 
+
 static bool insideTriangle(int x, int y, const Vector3f* _v)
 {   
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
     Vector3f v01,v12,v20,v;
     v01=_v[1]-_v[0],v12=_v[2]-_v[1],v20=_v[0]-_v[2];
-    
+    Vector2f v01_2,v12_2,v20_2,v0t,v1t,v2t;
+    v01_2<<v01.x(),v01.y();
+    v12_2<<v12.x(),v12.y();
+    v20_2<<v20.x(),v20.y();
+    v0t<<x-_v[0].x(),y-_v[0].y();
+    v1t<<x-_v[1].x(),y-_v[1].y();
+    v2t<<x-_v[2].x(),y-_v[2].y();
+
 }
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f* v)
@@ -156,13 +164,16 @@ rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
 
 int rst::rasterizer::get_index(int x, int y)
 {
+    // it's easy to understand, the index counts from the (height-1,0)
+    // the (height-1-y) calculates the rows above the current pixel
     return (height-1-y)*width + x;
 }
 
+// use the func to color one pixel
 void rst::rasterizer::set_pixel(const Eigen::Vector3f& point, const Eigen::Vector3f& color)
 {
     //old index: auto ind = point.y() + point.x() * width;
-    auto ind = (height-1-point.y())*width + point.x();
+    auto ind = (height-1-point.y())*width + point.x();// TODO:is the type is float?
     frame_buf[ind] = color;
 
 }
