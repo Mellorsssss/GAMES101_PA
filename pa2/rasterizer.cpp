@@ -40,20 +40,32 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
 }
 
 
-
-static bool insideTriangle(int x, int y, const Vector3f* _v)
+Vector3f CrossProduct(const Vector3f& a,const Vector3f&b){
+    Vector3f res;
+    res<<0,0,a.x()*b.y()-a.y()*b.x();
+    return res;
+}
+static bool insideTriangle(float x, float y, const Vector3f* _v)
 {   
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
-    Vector3f v01,v12,v20,v;
-    v01=_v[1]-_v[0],v12=_v[2]-_v[1],v20=_v[0]-_v[2];
-    Vector2f v01_2,v12_2,v20_2,v0t,v1t,v2t;
-    v01_2<<v01.x(),v01.y();
-    v12_2<<v12.x(),v12.y();
-    v20_2<<v20.x(),v20.y();
-    v0t<<x-_v[0].x(),y-_v[0].y();
-    v1t<<x-_v[1].x(),y-_v[1].y();
-    v2t<<x-_v[2].x(),y-_v[2].y();
-
+    Vector3f v01,v12,v20,v0t,v1t,v2t;
+    Vector3f v_tri[3],v_dot[3];
+    // calculate the 3 points'pos on the z=0 platform
+    v_tri[0]=_v[1]-_v[0],v_tri[1]=_v[2]-_v[1],v_tri[2]=_v[0]-_v[2];
+    for(int i=0;i<3;i++){
+        v_tri[i].z()=0;
+    }
+    for(int i=0;i<3;i++){
+        v_dot[i]<<x-_v[i].x(),y-_v[i].y(),0;
+    }
+    
+    for(int i=0;i<3;i++){
+        //std::cout<<v_tri[i]<<v_dot[i]<<std::endl;
+        Vector3f res=CrossProduct(v_tri[i],v_dot[i]);
+        if(res.z()<0)return false;
+    }
+    
+    return true;
 }
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f* v)
@@ -116,6 +128,43 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
 //Screen space rasterization
 void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     auto v = t.toVector4();
+    float x_min=9999999,y_min=9999999,x_max=-999999,y_max=-999999;
+    for (auto tem :v){
+        if(tem.x()<x_min){
+            x_min=tem.x();
+        }
+        if (tem.x()>x_max){
+            x_max=tem.x();
+        }
+
+        if(tem.y()<y_min){
+            y_min=tem.y();
+        }
+        if(tem.y()>y_max){
+            y_max=tem.y();
+        }
+    }
+    int x_min_i=(int)x_min,x_max_i=(int)x_max,
+        y_min_i=(int)y_min,y_max_i=(int)y_max;
+    auto color=t.getColor();
+    //std::cout<<x_min_i<<" "<<x_max_i<<" "<<y_min_i<<" "<<y_max_i<<std::endl;
+    for(int x_=x_min_i;x_<=x_max_i;x_++){
+        for(int y_=y_min_i;y_<=y_max_i;y_++){
+            if(insideTriangle((float)x_+0.5,(float)y_+0.5,t.v)){
+                auto [alpha, beta, gamma] = computeBarycentric2D(x_, y_, t.v);
+                float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+                float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+                z_interpolated *= w_reciprocal;
+                int index=get_index(x_,y_);
+                if(z_interpolated<depth_buf[index]){
+                    depth_buf[index]=z_interpolated;
+                    Vector3f cur_point;
+                    cur_point<<x_,y_,z_interpolated;
+                    set_pixel(cur_point,color);
+                }
+            }
+        }
+    }
     
     // TODO : Find out the bounding box of current triangle.
     // iterate through the pixel and find if the current pixel is inside the triangle
