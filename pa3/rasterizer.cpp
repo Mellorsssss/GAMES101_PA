@@ -264,10 +264,43 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
     //    * v[i].w() is the vertex view space depth value z.
     //    * Z is interpolated view space depth for the current pixel
     //    * zp is depth between zNear and zFar, used for z-buffer
+    auto v = t.toVector4();
+    // Find out the bounding box of current triangle.
+    // iterate through the pixel and find if the current pixel is inside the triangle
+    float x_min=std::min(v[0].x(),std::min(v[1].x(),v[2].x())),
+          y_min=std::min(v[0].y(),std::min(v[1].y(),v[2].y())),
+          x_max=std::max(v[0].x(),std::max(v[1].x(),v[2].x())),
+          y_max=std::max(v[0].y(),std::max(v[1].y(),v[2].y()));
+    
+    // rasterize without AA
+    for(int x_=x_min;x_<=x_max;x_++){
+        for(int y_=y_min;y_<=y_max;y_++){
+            if(insideTriangle((float)x_+0.5,(float)y_+0.5,t.v)){
+                auto [alpha, beta, gamma] = computeBarycentric2D(x_+0.5, y_+0.5, t.v);
+                float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+                float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+                z_interpolated *= w_reciprocal;
 
-    // float Z = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-    // float zp = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-    // zp *= Z;
+                // Interpolate the attributes 
+                auto interpolated_color = interpolate(alpha,beta, gamma,t.color[0],t.color[1],t.color[2],1.f);
+                auto interpolated_normal = interpolate(alpha,beta,gamma,t.normal[0],t.normal[1],t.normal[2],1.f);
+                auto interpolated_texcoords = interpolate(alpha,beta,gamma,t.tex_coords[0],t.tex_coords[1],t.tex_coords[2],1.f);
+                auto interpolated_shadingcoords = interpolate(alpha,beta,gamma,view_pos[0],view_pos[1],view_pos[2],1.f);
+
+                fragment_shader_payload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
+                payload.view_pos = interpolated_shadingcoords;
+                auto pixel_color = fragment_shader(payload);
+
+                int index=get_index(x_,y_);
+                if(z_interpolated<depth_buf[index]){
+                    depth_buf[index]=z_interpolated;
+                    Vector3f cur_point;
+                    set_pixel(Vector3f(x_,y_,0),pixel_color);
+                }
+            }
+        }
+    }
+    
 
     // TODO: Interpolate the attributes:
     // auto interpolated_color
