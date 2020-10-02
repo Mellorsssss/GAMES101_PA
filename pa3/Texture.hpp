@@ -12,6 +12,23 @@ class Texture
 private:
     cv::Mat image_data;
 
+    static inline void prepare(float &u, float &v)
+    {
+        if (u < 0)
+            u = 0;
+        else if (u > 1)
+            u = 1;
+        if (v < 0)
+            v = 0;
+        else if (v > 1)
+            v = 1;
+    }
+
+    static inline void lerp(float &s, const float &mid, const float &begin, const float &end)
+    {
+        s = (mid - begin) / (end - begin);
+    }
+
 public:
     Texture(const std::string &name)
     {
@@ -25,72 +42,35 @@ public:
 
     Eigen::Vector3f getColor(float u, float v)
     {
+        prepare(u, v);
         auto u_img = u * width;
         auto v_img = (1 - v) * height;
         auto color = image_data.at<cv::Vec3b>(v_img, u_img);
         return Eigen::Vector3f(color[0], color[1], color[2]);
     }
-    // Eigen::Vector3f getColorBilinear(float u, float v)
-    // {
-    //     auto u_img = u * width;
-    //     auto v_img = (1 - v) * height;
-    //     std::array<Eigen::Vector2f, 4> uv;
-    //     std::array<cv::Vec3b, 4> color;
-    //     std::fill(uv.begin(), uv.end(), Eigen::Vector2f{-1, -1});
-    //     uv[1] = {round(u_img), round(v_img)};
-    //     uv[0] = {uv[1].x() - 1, uv[1].y()};
-    //     uv[2] = {uv[1].x() - 1, uv[1].y() - 1};
-    //     uv[3] = {uv[1].x(), uv[1].y() - 1};
-    //     for (int i = 0; i < 4; i++)
-    //     {
-    //         //std::cout << i << " " << uv[i].x() << " " << uv[i].y() << std::endl;
-    //         color[i] = (uv[i].x() >= 0 && uv[i].y() >= 0) ? image_data.at<cv::Vec3b>(uv[i].y(), uv[i].x()) : cv::Vec3b(0, 0, 0);
-    //         //std::cout << color[i] << std::endl;
-    //     }
-    //     float u_lerp = 1.f * (u_img - uv[0].x()) / (uv[1].x() - uv[0].x());
-    //     //std::cout << u_lerp << std::endl;
-    //     for (int i = 0; i < 2; i++)
-    //     {
-    //         color[i] = color[i << 1] + u_lerp * (color[(i << 1) + 1] - color[i << 1]);
-    //     }
 
-    //     float v_lerp = 1.f * (v_img - uv[2].y()) / (uv[0].y() - uv[2].y());
-    //     //std::cout << v_lerp << std::endl;
-    //     color[0] = color[1] + v_lerp * (color[0] - color[1]);
-    //     //std::cout << "Output of Bilinear is " << Eigen::Vector3f(color[0][0], color[0][1], color[0][2]) << std::endl;
-    //     return Eigen::Vector3f(color[0][0], color[0][1], color[0][2]);
-    // }
     Eigen::Vector3f getColorBilinear(float u, float v)
     {
-        if (u < 0)
-            u = 0;
-        if (u > 1)
-            u = 1;
-        if (v < 0)
-            v = 0;
-        if (v > 1)
-            v = 1;
+        prepare(u, v);
         auto u_img = u * width;
         auto v_img = (1 - v) * height;
+        float lb_x = floor(u_img);
+        float lb_y = floor(v_img);
+        float rt_x = std::min((float)width, ceil(u_img));
+        float rt_y = std::min((float)height, ceil(v_img));
 
-        float u_min = std::floor(u_img);
-        float u_max = std::min((float)width, std::ceil(u_img));
-        float v_min = std::floor(v_img);
-        float v_max = std::min((float)height, std::ceil(v_img));
+        auto color_lb = image_data.at<cv::Vec3b>(lb_y, lb_x);
+        auto color_lt = image_data.at<cv::Vec3b>(rt_y, lb_x);
+        auto color_rb = image_data.at<cv::Vec3b>(lb_y, rt_x);
+        auto color_rt = image_data.at<cv::Vec3b>(rt_y, rt_x);
 
-        auto Q11 = image_data.at<cv::Vec3b>(v_max, u_min);
-        auto Q12 = image_data.at<cv::Vec3b>(v_max, u_max);
-
-        auto Q21 = image_data.at<cv::Vec3b>(v_min, u_min);
-        auto Q22 = image_data.at<cv::Vec3b>(v_min, u_max);
-
-        float rs = (u_img - u_min) / (u_max - u_min);
-        float rt = (v_img - v_max) / (v_min - v_max);
-        auto cBot = (1 - rs) * Q11 + rs * Q12;
-        auto cTop = (1 - rs) * Q21 + rs * Q22;
-        auto P = (1 - rt) * cBot + rt * cTop;
-
-        return Eigen::Vector3f(P[0], P[1], P[2]);
+        float s, t;
+        lerp(s, u_img, lb_x, rt_x);
+        lerp(t, v_img, lb_y, rt_y);
+        auto color_sb = (1 - s) * color_lb + s * color_rb;
+        auto color_st = (1 - s) * color_lt + s * color_rt;
+        auto color_tt = (1 - t) * color_sb + t * color_st;
+        return Eigen::Vector3f(color_tt[0], color_tt[1], color_tt[2]);
     }
 };
 #endif //RASTERIZER_TEXTURE_H

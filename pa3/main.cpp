@@ -33,14 +33,14 @@ Eigen::Matrix4f get_model_matrix(float angle)
         0, 0, 0, 1;
 
     Eigen::Matrix4f scale;
-    scale << 2.5, 0, 0, 0,
-        0, 2.5, 0, 0,
-        0, 0, 2.5, 0,
+    scale << 0.2, 0, 0, 0,
+        0, 0.2, 0, 0,
+        0, 0, 0.2, 0,
         0, 0, 0, 1;
 
     Eigen::Matrix4f translate;
     translate << 1, 0, 0, 0,
-        0, 1, 0, 0,
+        0, 1, 0, -1,
         0, 0, 1, 0,
         0, 0, 0, 1;
 
@@ -332,16 +332,16 @@ int main(int argc, const char **argv)
 {
     std::vector<Triangle *> TriangleList;
 
-    float angle = 140.0;
+    float angle = 0.0; //140.0;
     bool command_line = false;
 
     std::string filename = "output.png";
     objl::Loader Loader;
-    std::string obj_path = "../models/spot/";
+    std::string obj_path = "../models/charizard/";
 
     // Load .obj File
-    bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
-    //bool loadout = Loader.LoadFile("../models/bunny/bunny.obj");
+    //bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
+    bool loadout = Loader.LoadFile("../models/charizard/charizard.obj");
     for (auto mesh : Loader.LoadedMeshes)
     {
         for (int i = 0; i < mesh.Vertices.size(); i += 3)
@@ -357,9 +357,10 @@ int main(int argc, const char **argv)
         }
     }
 
-    rst::rasterizer r(700, 700);
+    constexpr int size = 1500;
+    rst::rasterizer r(size, size);
 
-    auto texture_path = "hmap.jpg";
+    auto texture_path = "Charizard.png";
     r.set_texture(Texture(obj_path + texture_path));
 
     std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
@@ -412,9 +413,8 @@ int main(int argc, const char **argv)
         r.set_model(get_model_matrix(angle));
         r.set_view(get_view_matrix(eye_pos));
         r.set_projection(get_projection_matrix(45.0, 1, 0.1, 50));
-
         r.draw(TriangleList);
-        cv::Mat image(700, 700, CV_32FC3, r.frame_buffer().data());
+        cv::Mat image(size, size, CV_32FC3, r.frame_buffer().data());
         image.convertTo(image, CV_8UC3, 1.0f);
         cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
 
@@ -433,7 +433,7 @@ int main(int argc, const char **argv)
 
         //r.draw(pos_id, ind_id, col_id, rst::Primitive::Triangle);
         r.draw(TriangleList);
-        cv::Mat image(700, 700, CV_32FC3, r.frame_buffer().data());
+        cv::Mat image(size, size, CV_32FC3, r.frame_buffer().data());
         image.convertTo(image, CV_8UC3, 1.0f);
         cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
 

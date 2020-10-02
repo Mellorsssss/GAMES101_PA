@@ -286,9 +286,10 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
     for (int i = 0; i < 3; i++)
         shading_v[i] = {v[i].x(), v[i].y(), v[i].z()};
     // rasterize without AA
-    for (int x_ = floor(x_min); x_ <= ceil(x_max); x_++)
+    //std::cout << x_min << " " << x_max << std::endl;
+    for (int x_ = std::max(floor(x_min), 0.f); x_ <= std::min((float)width, ceil(x_max)); x_++)
     {
-        for (int y_ = floor(y_min); y_ <= ceil(y_max); y_++)
+        for (int y_ = std::max(floor(y_min), 0.f); y_ <= std::min(ceil(y_max), (float)height); y_++)
         {
             if (insideTriangle((float)x_ + 0.5, (float)y_ + 0.5, t.v))
             {
