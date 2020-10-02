@@ -33,9 +33,9 @@ Eigen::Matrix4f get_model_matrix(float angle)
         0, 0, 0, 1;
 
     Eigen::Matrix4f scale;
-    scale << 0.2, 0, 0, 0,
-        0, 0.2, 0, 0,
-        0, 0, 0.2, 0,
+    scale << 1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
         0, 0, 0, 1;
 
     Eigen::Matrix4f translate;
@@ -340,8 +340,9 @@ int main(int argc, const char **argv)
     std::string obj_path = "../models/charizard/";
 
     // Load .obj File
-    //bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
-    bool loadout = Loader.LoadFile("../models/charizard/charizard.obj");
+    bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
+    //bool loadout = Loader.LoadFile("../models/Umbreon/UmbreonLowPoly.obj");
+    //bool loadout = Loader.LoadFile("../models/masterBall/Masterball.obj");
     for (auto mesh : Loader.LoadedMeshes)
     {
         for (int i = 0; i < mesh.Vertices.size(); i += 3)
@@ -367,7 +368,7 @@ int main(int argc, const char **argv)
 
     if (argc >= 2)
     {
-        command_line = true;
+        command_line = false;
         filename = std::string(argv[1]);
 
         if (argc == 3 && std::string(argv[2]) == "texture")
@@ -443,12 +444,13 @@ int main(int argc, const char **argv)
 
         if (key == 'a')
         {
-            angle -= 0.1;
+            angle -= 10;
         }
         else if (key == 'd')
         {
-            angle += 0.1;
+            angle += 10;
         }
+        std::cout << "frame count: " << frame_count++ << '\n';
     }
     return 0;
 }
