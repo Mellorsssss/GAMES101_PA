@@ -286,34 +286,31 @@ void rst::rasterizer::rasterize_triangle(const Triangle &t, const std::array<Eig
     for (int i = 0; i < 3; i++)
         shading_v[i] = {v[i].x(), v[i].y(), v[i].z()};
     // rasterize without AA
-    for (int x_ = x_min; x_ <= x_max; x_++)
+    for (int x_ = floor(x_min); x_ <= ceil(x_max); x_++)
     {
-        for (int y_ = y_min; y_ <= y_max; y_++)
+        for (int y_ = floor(y_min); y_ <= ceil(y_max); y_++)
         {
-            if (insideTriangle((float)x_, (float)y_, t.v))
+            if (insideTriangle((float)x_ + 0.5, (float)y_ + 0.5, t.v))
             {
-                auto [alpha, beta, gamma] = computeBarycentric2D(x_, y_, t.v);
+                auto [alpha, beta, gamma] = computeBarycentric2D(x_ + 0.5, y_ + 0.5, t.v);
                 float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                 float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                 z_interpolated *= w_reciprocal;
 
                 // Interpolate the attributes
-                auto interpolated_color = interpolate(alpha, beta, gamma, t.color[0], t.color[1], t.color[2], 1.f);
-                auto interpolated_normal = interpolate(alpha, beta, gamma, t.normal[0], t.normal[1], t.normal[2], 1.f);
-                auto interpolated_texcoords = interpolate(alpha, beta, gamma, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1.f);
-                auto interpolated_shadingcoords = interpolate(alpha, beta, gamma, view_pos[0], view_pos[1], view_pos[2], 1.f);
-                //auto interpolated_color = interpolate_r(alpha, beta, gamma, t.color[0], t.color[1], t.color[2], view_pos, z_interpolated);
-                // auto interpolated_normal = interpolate_r(alpha, beta, gamma, t.normal[0], t.normal[1], t.normal[2], view_pos, z_interpolated);
-                // auto interpolated_texcoords = interpolate_r(alpha, beta, gamma, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], view_pos, z_interpolated);
-                // auto interpolated_shadingcoords = interpolate_r(alpha, beta, gamma, view_pos[0], view_pos[1], view_pos[2], view_pos, z_interpolated);
-
-                fragment_shader_payload payload(interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
-                payload.view_pos = interpolated_shadingcoords;
-                auto pixel_color = fragment_shader(payload);
 
                 int index = get_index(x_, y_);
                 if (z_interpolated < depth_buf[index])
                 {
+                    auto interpolated_color = interpolate(alpha, beta, gamma, t.color[0], t.color[1], t.color[2], 1.f);
+                    auto interpolated_normal = interpolate(alpha, beta, gamma, t.normal[0], t.normal[1], t.normal[2], 1.f).normalized();
+                    auto interpolated_texcoords = interpolate(alpha, beta, gamma, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1.f);
+                    auto interpolated_shadingcoords = interpolate(alpha, beta, gamma, view_pos[0], view_pos[1], view_pos[2], 1.f);
+
+                    fragment_shader_payload payload(interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
+                    payload.view_pos = interpolated_shadingcoords;
+                    auto pixel_color = fragment_shader(payload);
+
                     depth_buf[index] = z_interpolated;
                     set_pixel(Vector2i(x_, y_), pixel_color);
                 }

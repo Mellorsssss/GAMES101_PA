@@ -54,7 +54,8 @@ inline float cal_radian(float angle)
 
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
 {
-    Eigen::Matrix4f projection;
+    Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
+
     // caculate the t and r
     float t = std::tan(cal_radian(eye_fov / 2.0)) * (-zNear), //std::abs(zNear),
         r = aspect_ratio * t;
@@ -128,7 +129,7 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload &payload)
     if (payload.texture)
     {
         // TODO: Get the texture value at the texture coordinates of the current fragment
-        return_color = payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y());
+        return_color = payload.texture->getColorBilinear(payload.tex_coords.x(), payload.tex_coords.y());
     }
     Eigen::Vector3f texture_color;
     texture_color << return_color.x(), return_color.y(), return_color.z();
@@ -250,10 +251,10 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload &payl
         std::cout << payload.tex_coords << std::endl;
         return Vector3f(0, 0, 0);
     }
-    float dU = kh * kn * (payload.texture->getColor(payload.tex_coords[0] + 1.0 / payload.texture->width, payload.tex_coords[1]).norm() - payload.texture->getColor(payload.tex_coords[0], payload.tex_coords[1]).norm());
-    float dV = kh * kn * (payload.texture->getColor(payload.tex_coords[0], payload.tex_coords[1] + 1.0 / payload.texture->height).norm() - payload.texture->getColor(payload.tex_coords[0], payload.tex_coords[1]).norm());
+    float dU = kh * kn * (payload.texture->getColorBilinear(payload.tex_coords[0] + 1.0 / payload.texture->width, payload.tex_coords[1]).norm() - payload.texture->getColorBilinear(payload.tex_coords[0], payload.tex_coords[1]).norm());
+    float dV = kh * kn * (payload.texture->getColorBilinear(payload.tex_coords[0], payload.tex_coords[1] + 1.0 / payload.texture->height).norm() - payload.texture->getColorBilinear(payload.tex_coords[0], payload.tex_coords[1]).norm());
     Vector3f ln(-dU, -dV, 1);
-    point += kn * normal * payload.texture->getColor(payload.tex_coords[0], payload.tex_coords[1]).norm();
+    point += kn * normal * payload.texture->getColorBilinear(payload.tex_coords[0], payload.tex_coords[1]).norm();
     normal = (TBN * ln).normalized();
     Eigen::Vector3f result_color = {0, 0, 0};
 
@@ -317,8 +318,8 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload &payload)
         std::cout << payload.tex_coords << std::endl;
         return Vector3f(0, 0, 0);
     }
-    float dU = kh * kn * (payload.texture->getColor(payload.tex_coords[0] + 1.0 / payload.texture->width, payload.tex_coords[1]).norm() - payload.texture->getColor(payload.tex_coords[0], payload.tex_coords[1]).norm());
-    float dV = kh * kn * (payload.texture->getColor(payload.tex_coords[0], payload.tex_coords[1] + 1.0 / payload.texture->height).norm() - payload.texture->getColor(payload.tex_coords[0], payload.tex_coords[1]).norm());
+    float dU = kh * kn * (payload.texture->getColorBilinear(payload.tex_coords[0] + 1.0 / payload.texture->width, payload.tex_coords[1]).norm() - payload.texture->getColorBilinear(payload.tex_coords[0], payload.tex_coords[1]).norm());
+    float dV = kh * kn * (payload.texture->getColorBilinear(payload.tex_coords[0], payload.tex_coords[1] + 1.0 / payload.texture->height).norm() - payload.texture->getColorBilinear(payload.tex_coords[0], payload.tex_coords[1]).norm());
     Vector3f ln(-dU, -dV, 1);
     normal = (TBN * ln).normalized();
     Eigen::Vector3f result_color = {0, 0, 0};
@@ -340,6 +341,7 @@ int main(int argc, const char **argv)
 
     // Load .obj File
     bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
+    //bool loadout = Loader.LoadFile("../models/bunny/bunny.obj");
     for (auto mesh : Loader.LoadedMeshes)
     {
         for (int i = 0; i < mesh.Vertices.size(); i += 3)
