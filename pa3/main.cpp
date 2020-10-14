@@ -340,7 +340,7 @@ int main(int argc, const char **argv)
     std::string obj_path = "../models/charizard/";
 
     // Load .obj File
-    bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
+    bool loadout = Loader.LoadFile("../models/");
     //bool loadout = Loader.LoadFile("../models/Umbreon/UmbreonLowPoly.obj");
     //bool loadout = Loader.LoadFile("../models/masterBall/Masterball.obj");
     for (auto mesh : Loader.LoadedMeshes)

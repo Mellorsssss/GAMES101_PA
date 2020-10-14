@@ -6,7 +6,7 @@ std::vector<cv::Point2f> control_points;
 
 void mouse_handler(int event, int x, int y, int flags, void *userdata)
 {
-    if (event == cv::EVENT_LBUTTONDOWN && control_points.size() < 4)
+    if (event == cv::EVENT_LBUTTONDOWN && control_points.size() < 8)
     {
         std::cout << "Left button of the mouse is clicked - position (" << x << ", "
                   << y << ")" << '\n';
@@ -30,16 +30,46 @@ void naive_bezier(const std::vector<cv::Point2f> &points, cv::Mat &window)
     }
 }
 
+long long factorial(long long num)
+{
+    long long res = 1;
+    assert(num >= 0);
+    if (num == 0)
+        return res;
+    for (long long i = 2; i <= num; i++)
+    {
+        res *= i;
+    }
+    return res;
+}
+
+long long cal_c(long long m, long long n)
+{
+    return factorial(m) / (factorial(n) * factorial(m - n));
+}
+
 cv::Point2f recursive_bezier(const std::vector<cv::Point2f> &control_points, float t)
 {
     // TODO: Implement de Casteljau's algorithm
-    return cv::Point2f();
+    long long n = control_points.size() - 1;
+    assert(n >= 0);
+    cv::Point2f res(0, 0);
+    for (int i = 0; i <= n; i++)
+    {
+        res += (double)cal_c(n, i) * std::pow(1 - t, n - i) * std::pow(t, i) * control_points[i];
+    }
+    return res;
 }
 
 void bezier(const std::vector<cv::Point2f> &control_points, cv::Mat &window)
 {
     // TODO: Iterate through all t = 0 to t = 1 with small steps, and call de Casteljau's
     // recursive Bezier algorithm.
+    for (double t = 0.0; t <= 1.0; t += 0.001)
+    {
+        auto point = recursive_bezier(control_points, t);
+        window.at<cv::Vec3b>(point.y, point.x)[1] = 255;
+    }
 }
 
 int main()
@@ -58,10 +88,10 @@ int main()
             cv::circle(window, point, 3, {255, 255, 255}, 3);
         }
 
-        if (control_points.size() == 4)
+        if (control_points.size() == 8)
         {
-            naive_bezier(control_points, window);
-            //   bezier(control_points, window);
+            //naive_bezier(control_points, window);
+            bezier(control_points, window);
 
             cv::imshow("Bezier Curve", window);
             cv::imwrite("my_bezier_curve.png", window);
