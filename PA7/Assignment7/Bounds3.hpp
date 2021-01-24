@@ -11,7 +11,7 @@
 
 class Bounds3
 {
-  public:
+public:
     Vector3f pMin, pMax; // two points to specify the bounding box
     Bounds3()
     {
@@ -46,7 +46,7 @@ class Bounds3
     }
 
     Vector3f Centroid() { return 0.5 * pMin + 0.5 * pMax; }
-    Bounds3 Intersect(const Bounds3& b)
+    Bounds3 Intersect(const Bounds3 &b)
     {
         return Bounds3(Vector3f(fmax(pMin.x, b.pMin.x), fmax(pMin.y, b.pMin.y),
                                 fmax(pMin.z, b.pMin.z)),
@@ -54,7 +54,7 @@ class Bounds3
                                 fmin(pMax.z, b.pMax.z)));
     }
 
-    Vector3f Offset(const Vector3f& p) const
+    Vector3f Offset(const Vector3f &p) const
     {
         Vector3f o = p - pMin;
         if (pMax.x > pMin.x)
@@ -66,7 +66,7 @@ class Bounds3
         return o;
     }
 
-    bool Overlaps(const Bounds3& b1, const Bounds3& b2)
+    bool Overlaps(const Bounds3 &b1, const Bounds3 &b2)
     {
         bool x = (b1.pMax.x >= b2.pMin.x) && (b1.pMin.x <= b2.pMax.x);
         bool y = (b1.pMax.y >= b2.pMin.y) && (b1.pMin.y <= b2.pMax.y);
@@ -74,32 +74,51 @@ class Bounds3
         return (x && y && z);
     }
 
-    bool Inside(const Vector3f& p, const Bounds3& b)
+    bool Inside(const Vector3f &p, const Bounds3 &b)
     {
         return (p.x >= b.pMin.x && p.x <= b.pMax.x && p.y >= b.pMin.y &&
                 p.y <= b.pMax.y && p.z >= b.pMin.z && p.z <= b.pMax.z);
     }
-    inline const Vector3f& operator[](int i) const
+    inline const Vector3f &operator[](int i) const
     {
         return (i == 0) ? pMin : pMax;
     }
 
-    inline bool IntersectP(const Ray& ray, const Vector3f& invDir,
-                           const std::array<int, 3>& dirisNeg) const;
+    inline bool IntersectP(const Ray &ray, const Vector3f &invDir,
+                           const std::array<int, 3> &dirisNeg) const;
 };
 
-
-
-inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
-                                const std::array<int, 3>& dirIsNeg) const
+inline bool Bounds3::IntersectP(const Ray &ray, const Vector3f &invDir,
+                                const std::array<int, 3> &dirIsNeg) const
 {
     // invDir: ray direction(x,y,z), invDir=(1.0/x,1.0/y,1.0/z), use this because Multiply is faster that Division
     // dirIsNeg: ray direction(x,y,z), dirIsNeg=[int(x>0),int(y>0),int(z>0)], use this to simplify your logic
     // TODO test if ray bound intersects
-
+    float t_enter = std::numeric_limits<float>::lowest();
+    float t_exit = std::numeric_limits<float>::max();
+    for (int i = 0; i < 3; i++)
+    {
+        float t_max = calculate_t(ray.origin[i], invDir[i], pMax[i]);
+        float t_min = calculate_t(ray.origin[i], invDir[i], pMin[i]);
+        if (dirIsNeg[i] == 1)
+        {
+            t_enter = std::max(t_enter, t_min);
+            t_exit = std::min(t_exit, t_max);
+        }
+        else
+        {
+            t_enter = std::max(t_enter, t_max);
+            t_exit = std::min(t_exit, t_min);
+        }
+        if (t_exit < 0 || t_enter >= t_exit)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
-inline Bounds3 Union(const Bounds3& b1, const Bounds3& b2)
+inline Bounds3 Union(const Bounds3 &b1, const Bounds3 &b2)
 {
     Bounds3 ret;
     ret.pMin = Vector3f::Min(b1.pMin, b2.pMin);
@@ -107,7 +126,7 @@ inline Bounds3 Union(const Bounds3& b1, const Bounds3& b2)
     return ret;
 }
 
-inline Bounds3 Union(const Bounds3& b, const Vector3f& p)
+inline Bounds3 Union(const Bounds3 &b, const Vector3f &p)
 {
     Bounds3 ret;
     ret.pMin = Vector3f::Min(b.pMin, p);
