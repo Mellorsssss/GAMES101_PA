@@ -88,6 +88,11 @@ public:
                            const std::array<int, 3> &dirisNeg) const;
 };
 
+inline float calculate_t(const float &o_projected, const float &d_inv_projected, const float &p_projected)
+{
+    return (p_projected - o_projected) * d_inv_projected;
+}
+
 inline bool Bounds3::IntersectP(const Ray &ray, const Vector3f &invDir,
                                 const std::array<int, 3> &dirIsNeg) const
 {

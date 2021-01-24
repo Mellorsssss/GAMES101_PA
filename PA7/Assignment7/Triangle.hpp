@@ -270,7 +270,7 @@ inline Intersection Triangle::getIntersection(Ray ray)
     inter.m = this->m;
     inter.normal = this->normal;
     inter.obj = this;
-    inter.distance = (inter.coords.x - ray.origin.x) * (inter.coords.x - ray.origin.x) + (inter.coords.y - ray.origin.y) * (inter.coords.y - ray.origin.y) + (inter.coords.z - ray.origin.z) * (inter.coords.z - ray.origin.z);
+    inter.distance = sqrt((inter.coords.x - ray.origin.x) * (inter.coords.x - ray.origin.x) + (inter.coords.y - ray.origin.y) * (inter.coords.y - ray.origin.y) + (inter.coords.z - ray.origin.z) * (inter.coords.z - ray.origin.z));
 
     return inter;
 }
