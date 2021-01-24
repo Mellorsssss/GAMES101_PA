@@ -65,19 +65,18 @@ bool Scene::trace(
 
 inline bool equal(const Vector3f &v1, const Vector3f &v2)
 {
-    return std::abs(v1.x - v2.x) < 2 &&
-           std::abs(v1.y - v2.y) < 2 &&
-           std::abs(v1.z - v2.z) < 2;
+    return std::abs(v1.x - v2.x) < 10 * EPSILON &&
+           std::abs(v1.y - v2.y) < 10 * EPSILON &&
+           std::abs(v1.z - v2.z) < 10 * EPSILON;
 }
 // Implementation of Path Tracing
 Vector3f Scene::castRay(const Ray &ray, int depth) const
 {
     // TO DO Implement Path Tracing Algorithm here
-    // direct light
+    //direct light
     Intersection ray_inter = intersect(ray);
     if (!ray_inter.happened)
     {
-        // std::cout << "Hit nothing!\n";
         return Vector3f();
     }
 
@@ -86,26 +85,14 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     Intersection light_inter;
     float pdf_light;
     sampleLight(light_inter, pdf_light);
-    // std::cout << "object pos :" << ray_inter.coords << std::endl;
-    // std::cout << "Light pos :" << light_inter.coords << std::endl;
-    Vector3f ws = light_inter.coords - ray_inter.coords;
+    Vector3f ws = normalize(light_inter.coords - ray_inter.coords);
     light_inter.distance = (light_inter.coords - ray_inter.coords).norm();
 
     Intersection test_inter = intersect(Ray(ray_inter.coords, ws));
-    // std::cout << test_inter.coords << "  " << light_inter.coords << std::endl;
-
-    if (fabs(light_inter.distance - test_inter.distance) < EPSILON)
+    if (fabs(light_inter.distance - test_inter.distance) < 10 * EPSILON)
     {
-        L_direct = light_inter.emit * ray_inter.m->eval(ws, wo, ray_inter.normal) * dotProduct(ws, ray_inter.normal) * dotProduct(-ws, light_inter.normal) / (dotProduct(ray_inter.coords - light_inter.coords, ray_inter.coords - light_inter.coords) * pdf_light);
-        std::cout << L_direct << std::endl;
-    }
-    else
-    {
-        ; // std::cout << "Blocked!\n";
+        L_direct = light_inter.emit * ray_inter.m->eval(ws, wo, ray_inter.normal) * dotProduct(ws, ray_inter.normal) * dotProduct(-ws, light_inter.normal) / (dotProduct(ray_inter.coords - light_inter.coords, ray_inter.coords - light_inter.coords) * (pdf_light + EPSILON));
     }
 
-    return L_direct;
-
-    // intersect(ray())
-    // indirect light
+        return L_direct;
 }
