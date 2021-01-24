@@ -89,13 +89,14 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     // std::cout << "object pos :" << ray_inter.coords << std::endl;
     // std::cout << "Light pos :" << light_inter.coords << std::endl;
     Vector3f ws = light_inter.coords - ray_inter.coords;
+    light_inter.distance = (light_inter.coords - ray_inter.coords).norm();
 
     Intersection test_inter = intersect(Ray(ray_inter.coords, ws));
+    // std::cout << test_inter.coords << "  " << light_inter.coords << std::endl;
 
-    std::cout << test_inter.coords << "  " << light_inter.coords << std::endl;
-    if (equal(test_inter.coords, light_inter.coords))
+    if (fabs(light_inter.distance - test_inter.distance) < EPSILON)
     {
-        L_direct = test_inter.emit * ray_inter.m->eval(ws, wo, ray_inter.normal) * dotProduct(ws, ray_inter.normal) * dotProduct(-ws, light_inter.normal) / (dotProduct(ray_inter.coords - light_inter.coords, ray_inter.coords - light_inter.coords) * pdf_light);
+        L_direct = light_inter.emit * ray_inter.m->eval(ws, wo, ray_inter.normal) * dotProduct(ws, ray_inter.normal) * dotProduct(-ws, light_inter.normal) / (dotProduct(ray_inter.coords - light_inter.coords, ray_inter.coords - light_inter.coords) * pdf_light);
         std::cout << L_direct << std::endl;
     }
     else
