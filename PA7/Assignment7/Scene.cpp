@@ -94,5 +94,18 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
         L_direct = light_inter.emit * ray_inter.m->eval(ws, wo, ray_inter.normal) * dotProduct(ws, ray_inter.normal) * dotProduct(-ws, light_inter.normal) / (dotProduct(ray_inter.coords - light_inter.coords, ray_inter.coords - light_inter.coords) * (pdf_light + EPSILON));
     }
 
-        return L_direct;
+    Vector3f L_indir;
+    if (get_random_float() < RussianRoulette)
+    {
+        // std::cout << "Win RR!\n";
+        Vector3f wi = normalize(ray_inter.m->sample(wo, ray_inter.normal));
+        Intersection object_inter = intersect(Ray(ray_inter.coords, wi));
+        if (object_inter.happened && !object_inter.obj->hasEmit())
+        {
+            // std::cout << "Hey!\n";
+            L_indir = castRay(Ray(ray_inter.coords, wi), 0) * ray_inter.m->eval(wo, wi, ray_inter.normal) * dotProduct(wi, ray_inter.normal) / (ray_inter.m->pdf(wo, wi, ray_inter.normal) * RussianRoulette);
+        }
+    }
+
+    return L_direct + L_indir;
 }
