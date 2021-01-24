@@ -235,7 +235,10 @@ inline Intersection Triangle::getIntersection(Ray ray)
     if (v < 0 || u + v > 1)
         return inter;
     t_tmp = dotProduct(e2, qvec) * det_inv;
-
+    if (t_tmp < EPSILON)
+    {
+        return inter;
+    }
     // TODO find ray triangle intersection
     inter.coords = ray(t_tmp);
     inter.happened = true;

@@ -263,7 +263,7 @@ inline Intersection Triangle::getIntersection(Ray ray)
     if (v < 0 || u + v > 1)
         return inter;
     t_tmp = dotProduct(e2, qvec) * det_inv;
-    if (fabs(t_tmp) < EPSILON)
+    if (t_tmp < EPSILON)
     {
         return inter;
     }

@@ -81,7 +81,7 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     }
 
     Vector3f L_direct;
-    Vector3f wo = -ray.direction;
+    Vector3f wo = normalize(-ray.direction);
     Intersection light_inter;
     float pdf_light;
     sampleLight(light_inter, pdf_light);
@@ -95,7 +95,7 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     }
 
     Vector3f L_indir;
-    if (get_random_float() < RussianRoulette)
+    if (false) //get_random_float() < RussianRoulette)
     {
         // std::cout << "Win RR!\n";
         Vector3f wi = normalize(ray_inter.m->sample(wo, ray_inter.normal));
