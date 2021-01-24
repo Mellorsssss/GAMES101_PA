@@ -4,12 +4,14 @@
 #include "Vector.hpp"
 #include "global.hpp"
 #include <chrono>
+#include "Sphere.hpp"
+#include "Material.hpp"
 
 // In the main function of the program, we create the scene (create objects and
 // lights) as well as set the options for the render (image width and height,
 // maximum recursion depth, field-of-view, etc.). We then call the render
 // function().
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     Scene scene(1280, 960);
 
@@ -18,6 +20,11 @@ int main(int argc, char** argv)
     scene.Add(&bunny);
     scene.Add(std::make_unique<Light>(Vector3f(-20, 70, 20), 1));
     scene.Add(std::make_unique<Light>(Vector3f(20, 70, 20), 1));
+    auto sph1 = new Sphere(Vector3f(-1, 0, -12), 2);
+    sph1->m = new Material(DIFFUSE_AND_GLOSSY, Vector3f(0.6, 0.7, 0.8));
+
+    scene.Add(sph1);
+
     scene.buildBVH();
 
     Renderer r;
