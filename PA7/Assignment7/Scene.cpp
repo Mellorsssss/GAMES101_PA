@@ -80,6 +80,11 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
         return Vector3f();
     }
 
+    if (ray_inter.obj->hasEmit())
+    {
+        return ray_inter.m->getEmission();
+    }
+
     Vector3f L_direct;
     Vector3f wo = normalize(-ray.direction);
     Intersection light_inter;
@@ -95,9 +100,8 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     }
 
     Vector3f L_indir;
-    if (false) //get_random_float() < RussianRoulette)
+    if (get_random_float() < RussianRoulette)
     {
-        // std::cout << "Win RR!\n";
         Vector3f wi = normalize(ray_inter.m->sample(wo, ray_inter.normal));
         Intersection object_inter = intersect(Ray(ray_inter.coords, wi));
         if (object_inter.happened && !object_inter.obj->hasEmit())
